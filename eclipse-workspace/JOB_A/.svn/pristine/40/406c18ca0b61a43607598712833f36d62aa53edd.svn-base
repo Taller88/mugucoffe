@@ -1,0 +1,78 @@
+package kr.sist.joba.main.controller;
+
+import java.net.URL;
+import java.util.Optional;
+import java.util.ResourceBundle;
+
+import data.PathData;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.input.MouseEvent;
+
+public class HomeController implements Initializable {
+	@FXML
+	Label lbLogOut, lbMyPage, lbStore, lbOrderHistory;
+
+	@Override
+	public void initialize(URL arg0, ResourceBundle arg1) {
+		lbStore.setOnMousePressed(event -> storeAction(event));
+		lbOrderHistory.setOnMousePressed(event -> orderHistoryAction(event));
+		lbMyPage.setOnMousePressed(event -> myPageAction(event));
+		lbLogOut.setOnMousePressed(event -> logOutAction(event));
+		//OrderList에 있는 기존 주문내역을 초기화하는 메소드
+		orderListInitialize();
+	}
+	
+	/**OrderList에 있는 기존 주문내역 초기화*/
+	private void orderListInitialize() {
+		for(int i=0; i<PathData.pProductName.length; i++) {
+		PathData.pProductName[i] = "주문상품";
+		PathData.pProductCount[i] = 0;
+		PathData.pProductPrice[i] = 0; 
+		PathData.porderChecked[i] = true;
+		PathData.pOrderImg[i] = "img/imgInit.png"; //img 패키지에 있는 이미지 사용 -> resource든 img든 통합
+		}
+	}
+
+	/**StoreInfo 가기 액션 이벤트*/
+	private void storeAction(MouseEvent event) {
+		PathData.pHomeStore = true;        
+		PathData.pNonMemberStore = false;   
+		PathData.pOrderHistoryStore = false;
+		PathData.pMyPageStore = false;      
+		PathData.storeMethod(lbStore, HomeController.class);
+	} //--storeAction
+
+	/**OrderHistory 가기 액션 이벤트*/
+	private void orderHistoryAction(MouseEvent event) {
+		PathData.pHomeOrderHistory = true;             
+		PathData.pStoreOrderHistory = false;             
+		PathData.pOrderHistoryLoginOrderHistory = false;
+		PathData.pMyPageOrderHistory = false;           
+		PathData.orderHistoryMethod(lbOrderHistory, HomeController.class);
+	} //--orderHistoryAction
+	
+	/**MyPage 가기 액션 이벤트*/
+	private void myPageAction(MouseEvent event) {
+		PathData.pHomeMyPage = true;        
+		PathData.pStoreMyPage = false;       
+		PathData.pOrderHistoryMyPage = false;
+		PathData.myPageMethod(lbMyPage, HomeController.class);
+	} //--myPageAction
+	
+	/**로그아웃 액션 이벤트*/
+	private void logOutAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("홈페이지로 돌아갑니다.");
+		alert.setContentText("정말로 로그아웃 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.logOutMethod(lbLogOut, HomeController.class);
+        }
+	} //--logOutAction
+}

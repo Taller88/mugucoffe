@@ -1,0 +1,697 @@
+/**
+ *<pre>
+ * PackageName : kr.sist.joba.main.controller
+ * description : 메인 컨트롤러 패키지
+ * @author 쌍용교육센터 E반 1조 JOB_A
+ * @since 2019-11-22
+ * @version 1.0
+ *  Copyright (C) by JOB_A All right reserved.
+ * </pre>
+ */
+package kr.sist.joba.main.controller;
+
+import java.net.URL;
+import java.text.DecimalFormat;
+import java.util.List;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.sist.hr.cmn.HROraConnectionMaker;
+import com.sist.hr.cmn.SearchVO;
+import com.sist.hr.member.dao.MemberDao;
+import com.sist.hr.member.domain.MemberVO;
+
+import data.PathData;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
+import javafx.scene.text.Text;
+import kr.sist.joba.order.dao.OrderDAO;
+import kr.sist.joba.order.dao.OrderVO;
+import kr.sist.joba.user.dao.UserPointDAO;
+import kr.sist.joba.user.dao.UserPointVO;
+
+/**
+ * <pre>
+ * PackageName : kr.sist.joba.main.controller
+ * ClassName : MyPageController.java
+ * description : 회원정보변경, 포인트 사용내역, 회원탈퇴 하는 마이페이지 클래스
+ * Modification Information
+ * 
+ *  수정일    	  	수정자               수정내용
+ *  ---------   ---------   -------------------------------
+ *  2019-12-05    박종훈         	최초생성
+ *  2019-12-20    박종훈         	개발완료
+ *  
+ * </pre>
+ * @since : 2019-12-05
+ * @version : 1.0
+ * @author : 쌍용교육센터 E반 1조 JOB_A
+ */
+public class MyPageController implements Initializable {
+	@FXML
+	ImageView imHome;
+	@FXML
+	Label lbBack, lbStore, lbOrderHistory, lbLogOut;
+	@FXML
+	ComboBox<String> comboBox;
+	@FXML
+	ListView<String> listView;
+	@FXML
+	Pane pnCover, pnMore;
+	@FXML
+	Label lbOrderName01, lbOrderName02, lbOrderName03, lbOrderName04,
+	lbOrderCount01, lbOrderCount02, lbOrderCount03, lbOrderCount04,
+	lbOrderPrice01, lbOrderPrice02, lbOrderPrice03, lbOrderPrice04,
+	lbWarning;
+	@FXML
+	Text txUserId, txUserName, txUserArea, txUserAddress, txUserCellPhone, txNowPoint;
+	@FXML
+	TextField tfChangeCellPhone, tfChangeArea, tfChangeAddress;
+	@FXML
+	PasswordField pfNowPw, pfChangePw, pfConfirmPw;
+	@FXML
+	Button btnMoreCanceL, btnChange, btnUserDelete, btnCellPhoneCheck;
+	
+	//숫자 천단위 구분
+	DecimalFormat formatter = new DecimalFormat("###,###");
+	
+	OrderDAO orderDao = new OrderDAO();
+	
+	//핸드폰 중복 체크
+	boolean checkedHp = true;
+	
+	/**
+	 * title       initialize
+	 * description 화면 출력될때 사용되는 메서드
+	 * @param 		location, resources
+	 */
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
+		UserPointDAO userPointDao = new UserPointDAO();
+		// Order.csv에 정보가 있는 경우 포인트를 사용한 주문내역 출력
+		if(orderDao.readOrderCheck() == true) {
+			if(orderDao.readUsePointCheck() == true) {
+				//콤보박스 조회할 항목 (0000년,00월)
+				ObservableList<String> comboList = FXCollections.observableArrayList(orderDao.readMonthAll());
+				comboBox.setItems(comboList);
+				comboBox.setOnAction(event -> comboAction(event));
+				listView.setOnMouseClicked(event -> moreAction(event));
+			}
+		}
+		//회원 정보 출력
+		txUserId.setText(PathData.pUserId);
+		txUserName.setText(userInfo().getName());
+		txUserArea.setText(userInfo().getAddress());
+		txUserAddress.setText(userInfo().getAddrDtail());
+		//휴대폰 번호 하이픈 추가
+		if(userInfo().getCellphone().length() == 10) {
+			txUserCellPhone.setText(userInfo().getCellphone().substring(0,3)+"-"+
+					userInfo().getCellphone().substring(3,6)+"-"+
+					userInfo().getCellphone().substring(6,10));
+		} else {
+			txUserCellPhone.setText(userInfo().getCellphone().substring(0,3)+"-"+
+					userInfo().getCellphone().substring(3,7)+"-"+
+					userInfo().getCellphone().substring(7,11));
+		}
+		txNowPoint.setText(formatter.format(Integer.parseInt(userPointDao.readUserPoint(PathData.pUserId)))+"P");
+		imHome.setOnMousePressed(event -> homeAction(event));
+		lbBack.setOnMousePressed(event -> backAction(event));
+		lbStore.setOnMousePressed(event -> storeAction(event));
+		lbOrderHistory.setOnMousePressed(event -> orderHistoryAction(event));
+		lbLogOut.setOnMousePressed(event -> logOutAction(event));
+		btnUserDelete.setOnAction(event -> userDeleteAction(event));
+		listView.setOnMouseClicked(event -> moreAction(event));
+		btnMoreCanceL.setOnAction(event -> moreCancleAction(event));
+		btnChange.setOnAction(event -> changeAction(event));
+		btnCellPhoneCheck.setOnAction(event -> btnCellPhoneCheckAction(event));
+	}
+	
+	/**
+	 * title       comboAction
+	 * description 마일리지 사용 월별 출력 (리스트뷰)
+	 * @param 		event
+	 */
+	public void comboAction(ActionEvent event) {
+		// Order.csv에 정보가 있는 경우
+		if(orderDao.readOrderCheck() == true) {
+			ObservableList<String> list = FXCollections.observableArrayList(orderDao.readUsePointList(PathData.pUserId, comboBox.getValue().substring(0, comboBox.getValue().length()-1)));
+			listView.setItems(list);
+		}
+	}
+	
+	/**
+	 * title       changeAction
+	 * description 회원 정보 수정 액션 이벤트
+	 * @param 		event
+	 * @return 		void
+	 */
+	private void changeAction(ActionEvent event) {
+		String cellPhone = tfChangeCellPhone.getText().trim();
+		//DB DAO
+		MemberDao dbDao = new MemberDao(new HROraConnectionMaker());
+		//변경할 정보 확인
+		if(pfNowPw.getText().isEmpty()) {
+			lbWarning.setText("현재 비밀번호와 변경할 내용을 입력해 주세요");
+		//현재 비밀번호 확인
+		} else if(userInfo().getPw().equals(pfNowPw.getText()) == false) {
+		  	lbWarning.setText("현재 비밀번호가 일치하지 않습니다");
+		//비밀번호 변경할 경우, pfChangePw == pfConfirmPw 확인
+		} else if((userInfo().getPw().equals(pfNowPw.getText()) == true)
+		&& !(pfChangePw.getText().equals(pfConfirmPw.getText()))
+		&& !(pfConfirmPw.getText().isEmpty())) {
+			lbWarning.setText("변경할 비밀번호와 재입력된 비밀번호가 일치하지 않습니다");
+		//비밀번호 변경할 경우, pfChangePw를 입력했을 때 pfConfirmPw도 입력했는지 확인
+		} else if(((userInfo().getPw().equals(pfNowPw.getText()) == true)
+		&& !(pfChangePw.getText().isEmpty()) && pfConfirmPw.getText().isEmpty())) {
+			lbWarning.setText("변경할 비밀번호를 재입력해 주세요");
+		//비밀번호 변경할 경우, 현재 비밀번호와 변경할 비밀번호가 다른지 확인
+		} else if((userInfo().getPw().equals(pfNowPw.getText()) == true)
+			&& !(pfChangePw.getText().isEmpty())
+			&& (pfChangePw.getText().equals(pfNowPw.getText()))) {
+			lbWarning.setText("현재 비밀번호와 변경할 비밀번호가 동일하지 않게 입력해 주세요");
+		//비밀번호 변경할 경우, 비밀번호 영문 또는 숫자, 4자~10자
+		} else if(!(pfChangePw.getText().isEmpty()) && (pwRegEx() == false)) {
+			lbWarning.setText("변경할 비밀번호는 영문 또는 숫자 4~10자로 입력해 주세요");
+		//핸드폰 번호 모두 숫자, 최소 10자~11자
+		} else if(!(tfChangeCellPhone.getText().isEmpty()) && cellPhoneCheck() == false) {
+			lbWarning.setText("휴대폰 번호는 모두 숫자로 입력해 주세요");
+		} else if(!(tfChangeCellPhone.getText().isEmpty()) && !(10<=cellPhone.length() && cellPhone.length()<=11)) {
+			lbWarning.setText("휴대폰 번호는 숫자 10~11자입니다");
+		//핸드폰 번호 변경할 경우, 현재 핸드폰 번호와 변경할 핸드폰 번호가 다른지 확인
+		} else if((userInfo().getCellphone().equals(tfChangeCellPhone.getText()) == true)
+			&& !(pfChangePw.getText().isEmpty())
+			&& !(tfChangeCellPhone.getText().isEmpty())) {
+			lbWarning.setText("현재 핸드폰 번호와 변경할 핸드폰 번호가 동일하지 않게 입력해 주세요");
+		//핸드폰 번호 중복 체크 검사 확인
+		} else if(!(pfNowPw.getText().isEmpty()) && !(tfChangeCellPhone.getText().isEmpty()) 
+				&& btnCellPhoneCheckAction(event) == true && checkedHp == true) {
+			lbWarning.setText("핸드폰 번호 인증을 해주세요");
+		//주소 데이터 내에서 시, 구 사이에 스페이스 바가 들어갔는지 확인
+		} else if(!(tfChangeArea.getText().isEmpty()) && areaRegEx(tfChangeArea.getText()) == false) {
+			lbWarning.setText("주소 형식을 확인해주세요 ex)서울특별시 서초구 또는 서울시 서초구");
+		//전체 공란 확인(현재 비밀번호가 비어있지 않은 상태에서 공란이 있는지 확인)
+		} else if(!(pfNowPw.getText().isEmpty()) && (pfChangePw.getText().isEmpty() 
+		&& pfConfirmPw.getText().isEmpty() && tfChangeCellPhone.getText().isEmpty() 
+		&& tfChangeArea.getText().isEmpty() && tfChangeAddress.getText().isEmpty())){
+			lbWarning.setText("변경할 내용을 입력해주세요");
+		//전체 공란 확인(현재 비밀번호가 공란인 상태에서 다른 텍스트 필드가 채워졌을 때)
+		} else if(pfNowPw.getText().isEmpty() && (!(pfChangePw.getText().isEmpty()) 
+				|| !(pfConfirmPw.getText().isEmpty()) || !(tfChangeCellPhone.getText().isEmpty()) 
+				|| !(tfChangeArea.getText().isEmpty()) || !(tfChangeAddress.getText().isEmpty()))) {
+					lbWarning.setText("현재 비밀번호와 변경할 내용을 입력해 주세요");
+		//회원 정보 변경에 성공
+		} else if(!(pfNowPw.getText().isEmpty())
+		&& (userInfo().getPw().equals(pfNowPw.getText()) == true)
+		&& !(pfChangePw.getText().isEmpty() && !(pfConfirmPw.getText().isEmpty()))) {
+			if(checkedHp == false) {
+			MemberVO modVO = getUpdateUserInfoInputData(PathData.pUserId, pfChangePw.getText(), tfChangeCellPhone.getText(), tfChangeArea.getText(), tfChangeAddress.getText());
+			dbDao.do_update(modVO);
+		   	Alert alert = new Alert(AlertType.WARNING);
+			//alert.setTitle("주의!");
+			alert.setHeaderText("회원 정보가 수정되었습니다.");
+	        Optional<ButtonType> result = alert.showAndWait();
+//	        if(result.get() == ButtonType.OK) {
+//	        	PathData.lbHomeMethod(btnChange, MyPageController.class);
+//	        }
+			}
+		}
+	}
+	
+	/**
+	 * title       btnCellPhoneCheckAction
+	 * description 핸드폰 번호 중복 확인 버튼
+	 * @param 		event
+	 * @return 		void
+	 */
+	public boolean btnCellPhoneCheckAction(ActionEvent event) {
+		boolean check = true;
+		if(tfChangeCellPhone.getText().isEmpty()){
+			lbWarning.setText("핸드폰 번호를 입력해 주세요.");
+		} else if(cellPhoneOverLapCheck(tfChangeCellPhone.getText()) == true) {
+			lbWarning.setText("입력하신 번호로 가입한 이력이 있습니다.");
+			check = true;
+		//핸드폰 번호 모두 숫자, 최소 10자~11자
+		} else if(!(tfChangeCellPhone.getText().isEmpty()) && cellPhoneCheck() == false) {
+			lbWarning.setText("휴대폰 번호는 모두 숫자로 입력해 주세요");
+		} else if(!(tfChangeCellPhone.getText().isEmpty()) && !(10<=tfChangeCellPhone.getText().length() && tfChangeCellPhone.getText().length()<=11)) {
+			lbWarning.setText("휴대폰 번호는 숫자 10~11자입니다");
+		} else if(((cellPhoneOverLapCheck(tfChangeCellPhone.getText()) == false)
+				&& (cellPhoneCheck() == true)) && !(tfChangeCellPhone.getText().isEmpty())) {
+			lbWarning.setText("인증이 완료 되었습니다.");
+			check = false;
+			checkedHp = false;
+		}
+		return check;
+	} //--btnCellPhoneCheckAction
+	
+	/**
+	 * title       cellPhoneOverLapCheck
+	 * description DB에서 핸드폰 번호 중복되는지 검사
+	 * @param 		cellphone
+	 * @return 		check
+	 */
+	public boolean cellPhoneOverLapCheck(String cellphone) {
+		boolean check = false;
+		//DB DAO
+		MemberDao dbDao = new MemberDao(new HROraConnectionMaker());
+		//DB에 있는 데이터값을 List<MemberVO>형식으로 반환
+		SearchVO searchVO = new SearchVO();
+		searchVO.setGrpDiv("1");
+		//"1" getfield com.sist.hr.cmn.SearchVO.searchDiv
+		searchVO.setSearchDiv("4");
+		searchVO.setSearchWord(cellphone.trim());
+    	List<MemberVO> dbData = (List<MemberVO>) dbDao.do_retrieve(searchVO);
+    	for(int i=0;i<dbData.size();i++){
+            if(dbData.get(i).getCellphone().equals(cellphone)) {
+            	check = true;
+            } else {
+            	check = false;
+            }
+    	}
+		return check;
+	} //--cellPhoneOverLapCheck
+
+	/**
+	 * title       cellPhoneCheck
+	 * description 휴대폰 번호가 모두 숫자인지 확인
+	 * @return 		isNumber
+	 */
+	public boolean cellPhoneCheck() {
+		boolean isNumber = true;
+		String cellPhone = tfChangeCellPhone.getText();
+		char cellPhoneCh = ' ';
+		for(int i=0; i<cellPhone.length(); i++) {
+			//숫자인지 비교
+			cellPhoneCh = cellPhone.charAt(i);
+			if(!('0'<=cellPhoneCh && cellPhoneCh<='9')) {
+				isNumber = false;
+				break;
+			}
+		}
+		return isNumber;
+	} //--cellPhoneCheck
+	
+	/**
+	 * title       pwRegEx
+	 * description PW 정규표현식으로 유효성 검사
+	 * @return 		check
+	 */
+	public boolean pwRegEx() {
+		Pattern pwPattern = null;
+		Matcher pwMatch = null;	
+		boolean check = false;
+		//영문 또는 숫자 4~10자
+		String source = "^[a-zA-Z0-9]{4,10}$";
+		String strPw = pfChangePw.getText();
+		pwPattern = Pattern.compile(source);
+		pwMatch = pwPattern.matcher(strPw);
+		while(true) {
+			if(pwMatch.matches()) {
+				check = true;
+				break;
+			} else {
+				check = false;
+				break;
+			}
+		}
+		return check;
+	} //--pwRegEx
+	
+	/**
+	 * title       areaRegEx
+	 * description 주소(Area) 정규표현식으로 유효성 검사
+	 * @param 		areaText
+	 * @return 		check
+	 */
+	public boolean areaRegEx(String areaText) {
+		Pattern areaPattern = null;
+		Matcher areaMatch = null;
+		boolean check = false;
+		//한글(공백문자 1개)한글
+		String source = "^[가-힣\\S]*\\s{1}[가-힣\\S]*$";
+		String strArea = areaText.trim();
+		areaPattern = Pattern.compile(source);
+		areaMatch = areaPattern.matcher(strArea);
+		while(true) {
+			if(areaMatch.matches()) {
+				check = true;
+				break;
+			} else {
+				check = false;
+				break;
+			}
+		}
+		return check;
+	} //--areaRegEx
+	
+	/**
+	 * title       moreAction
+	 * description 리스트뷰 마우스클릭 액션 이벤트
+	 * @param 		event
+	 * @return 		void
+	 */
+	/**리스트뷰 마우스클릭 액션 이벤트*/
+	private void moreAction(MouseEvent event) {
+		String item = listView.getSelectionModel().getSelectedItem();
+		if(!listView.getItems().isEmpty()) {
+			if(item != null) {
+				String orderNum = item.substring(23, 35);
+				Label[] orderName = {lbOrderName01, lbOrderName02, lbOrderName03, lbOrderName04};
+				Label[] orderCount = {lbOrderCount01, lbOrderCount02, lbOrderCount03, lbOrderCount04};
+				Label[] orderPrice = {lbOrderPrice01, lbOrderPrice02, lbOrderPrice03, lbOrderPrice04};
+				String[] arrOrderName = orderDao.readOrderName(orderNum);
+				String[] arrOrderCount = orderDao.readOrderCount(orderNum);
+				String[] arrOrderPrice = orderDao.readOrderPrice(orderNum);
+				for(int i=0;i<orderName.length;i++) {
+					orderName[i].setText("");
+					orderCount[i].setText("");
+					orderPrice[i].setText("");
+				}
+				for(int i=0;i<arrOrderName.length;i++) {
+					orderName[i].setText(arrOrderName[i]);
+					orderCount[i].setText(arrOrderCount[i]);
+					orderPrice[i].setText(formatter.format(Integer.parseInt(arrOrderPrice[i]))+"원");
+				}
+				pnMore.toFront();
+			}
+		}
+	}
+	
+	/**
+	 * title       moreCancleAction
+	 * description 자세히보기 닫기 버튼 액션 이벤트
+	 * @param 		event
+	 * @return 		void
+	 */
+	private void moreCancleAction(ActionEvent event) {
+		pnCover.toFront();
+	}
+	
+	/**
+	 * title       backAction
+	 * description 뒤로가기 액션 이벤트
+	 * @param 		event
+	 * @return 		void
+	 */
+	private void backAction(MouseEvent event) {
+		//Home.fxml 가기
+		if(PathData.pHomeMyPage == true) {
+			PathData.lbHomeMethod(lbBack, MyPageController.class);
+		//StoreInfo.fxml 가기
+		} else if(PathData.pStoreMyPage == true) {
+			PathData.storeMethod(lbBack, MyPageController.class);
+		//OrderHistory.fxml 가기
+		} else if(PathData.pOrderHistoryMyPage == true) {
+			PathData.orderHistoryMethod(lbBack, MyPageController.class);
+		}
+	} //--backAction
+	
+	/**
+	 * title       homeAction
+	 * description Home(메인홈) 가는 액션 이벤트
+	 * @param 		event
+	 */
+	public void homeAction(MouseEvent event) {
+		PathData.homeMethod(imHome, MyPageController.class);
+	} //--homeAction
+	
+	/**
+	 * title       storeAction
+	 * description StoreInfo 가는 액션 이벤트
+	 * @param 		event
+	 */
+	public void storeAction(MouseEvent event) {
+		PathData.pHomeStore = false;        
+		PathData.pNonMemberStore = false;   
+		PathData.pOrderHistoryStore = false;
+		PathData.pMyPageStore = true;      
+		PathData.storeMethod(lbStore, MyPageController.class);
+	} //--storeAction
+	
+	/**
+	 * title       orderHistoryAction
+	 * description OrderHistory 가는 액션 이벤트
+	 * @param 		event
+	 */
+	public void orderHistoryAction(MouseEvent event) {
+		PathData.pHomeOrderHistory = false;             
+		PathData.pStoreOrderHistory = false;             
+		PathData.pOrderHistoryLoginOrderHistory = false;
+		PathData.pMyPageOrderHistory = true;           
+		PathData.orderHistoryMethod(lbOrderHistory, MyPageController.class);
+	} //--orderHistoryAction
+	
+	/**
+	 * title       logOutAction
+	 * description 로그아웃 액션 이벤트
+	 * @param 		event
+	 * @return 		void
+	 */
+	private void logOutAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("홈페이지로 돌아갑니다.");
+		alert.setContentText("로그아웃 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.logOutMethod(lbLogOut, MyPageController.class);
+        }
+	} //--logOutAction
+	
+	/**
+	 * title       userDeleteAction
+	 * description 회원 탈퇴 액션 이벤트
+	 * @param 		event
+	 * @return 		void
+	 */
+	private void userDeleteAction(ActionEvent event) {
+		//DB DAO
+		MemberDao dbDao = new MemberDao(new HROraConnectionMaker());
+		SearchVO searchVO = new SearchVO();
+		searchVO.setGrpDiv("1"); //조구분
+		searchVO.setSearchDiv("1");
+		searchVO.setSearchWord(PathData.pUserId);
+
+		List<MemberVO> dbData = (List<MemberVO>) dbDao.do_retrieve(searchVO);
+		UserPointDAO pointDao = new UserPointDAO();
+		
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("회원탈퇴를 하겠습니까?");
+		alert.setContentText("확인을 누르면 회원탈퇴 철회는 불가능합니다.");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	//DB에서 회원정보 삭제
+	    	dbDao.do_delete(dbData.get(0));
+	    	//userPoint.csv에서 회원정보 삭제
+	    	UserPointVO voUserPoint = new UserPointVO(PathData.pUserId, pointDao.readUserPoint(PathData.pUserId));
+	    	pointDao.do_delete(voUserPoint);
+	    	
+	    	List<OrderVO> orderList = orderDao.readFile01("src/data/Order.csv");
+	    	for(int i=0; i<orderList.size(); i++) {
+	    		if(orderList.get(i).getUserId().equals(PathData.pUserId)) {
+	    			orderDao.do_delete(orderList.get(i));
+	    		}
+	    	}
+        }
+		Alert alert1 = new Alert(AlertType.INFORMATION);
+		alert1.setTitle("알림!");
+		alert1.setHeaderText("회원탈퇴가 완료되었습니다.");
+		alert1.setContentText("그동안 머거커피를 이용해 주셔서 감사합니다.");
+		Optional<ButtonType> result1 = alert1.showAndWait();
+		if(result1.get() == ButtonType.OK) {
+			PathData.userDeleteMethod(btnUserDelete, MyPageController.class);
+		}
+	}//--userDeleteAction
+        	
+	/**
+	 * title       userInfo
+	 * description DB에 있는 유저 회원 정보
+	 * @param 		
+	 * @return 		outvo
+	 */
+	private MemberVO userInfo() {
+		//DB DAO
+		MemberVO outvo = new MemberVO();
+		MemberDao dbDao = new MemberDao(new HROraConnectionMaker());
+		SearchVO searchVO = new SearchVO();
+		searchVO.setGrpDiv("1"); //조 구분
+		searchVO.setSearchDiv("1");
+		searchVO.setSearchWord("");
+		//1조 DB Data값 List
+    	List<MemberVO> dbData = (List<MemberVO>) dbDao.do_retrieve(searchVO);
+    	for(int i=0; i<dbData.size(); i++) {
+    		if(PathData.pUserId.equals(dbData.get(i).getMemId())) {
+    			outvo= dbData.get(i);
+    		}
+    	}
+		return outvo;
+	}
+	
+	/**
+	 * title       getUpdateUserInfoInputData
+	 * description 회원 정보 수정
+	 * @param 		vsId, inputPw, inputCellPhone, inputArea, inputAddress
+	 * @return 		outVo
+	 */
+	public MemberVO getUpdateUserInfoInputData(String vsId, String inputPw, String inputCellPhone, String inputArea, String inputAddress) {
+		//DB DAO
+		MemberDao dbDao = new MemberDao(new HROraConnectionMaker());
+		SearchVO searchVO = new SearchVO();
+		searchVO.setGrpDiv("1"); //조구분
+		List<MemberVO> list = (List<MemberVO>) dbDao.do_retrieve(searchVO);
+		String inputData = "";
+		//비밀번호 수정
+		if(!inputPw.equals("")) {
+			//비밀번호만 수정
+			for(int i=0;i<list.size();i++) {
+				if(list.get(i).getMemId().equals(vsId)) {
+					inputData = list.get(i).getMemId()+","+inputPw.trim()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+list.get(i).getCellphone()+","+list.get(i).getAddress()+","+list.get(i).getAddrDtail()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+					//userPoint 제외
+				}
+			}
+			//비밀번호, 휴대폰번호 수정
+			if(!inputCellPhone.equals("")) {
+				for(int i=0;i<list.size();i++) {
+					if(list.get(i).getMemId().equals(vsId)) {
+						inputData = list.get(i).getMemId()+","+inputPw.trim()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+list.get(i).getAddress()+","+list.get(i).getAddrDtail()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+					}
+				}
+			//비밀번호, 휴대폰번호, 상세주소 수정
+				if(!inputAddress.equals("")) {
+					for(int i=0;i<list.size();i++) {
+						if(list.get(i).getMemId().equals(vsId)) {
+							inputData = list.get(i).getMemId()+","+inputPw.trim()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+list.get(i).getAddress()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+						}
+					}
+			//비밀번호, 휴대폰번호, 주소, 상세주소 수정
+					if(!inputArea.equals("")) {
+						for(int i=0;i<list.size();i++) {
+							if(list.get(i).getMemId().equals(vsId)) {
+								inputData = list.get(i).getMemId()+","+inputPw.trim()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+inputArea.trim()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+							}
+						}
+					}
+				}
+			//비밀번호, 상세주소만 수정
+			} else if(!inputAddress.equals("")) {
+				for(int i=0;i<list.size();i++) {
+					if(list.get(i).getMemId().equals(vsId)) {
+						inputData = list.get(i).getMemId()+","+inputPw.trim()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+list.get(i).getCellphone()+","+list.get(i).getAddress()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+					}
+				}
+			//비밀번호, 주소, 상세주소 수정
+				if(!inputArea.equals("")) {
+					for(int i=0;i<list.size();i++) {
+						if(list.get(i).getMemId().equals(vsId)) {
+							inputData = list.get(i).getMemId()+","+inputPw.trim()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+list.get(i).getCellphone()+","+inputArea.trim()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+						}
+					}
+				}
+			}
+		//비밀번호 수정 안함
+		} else if(inputPw.equals("") || inputPw.equals(null)) {
+			//휴대폰번호만 수정
+			if(!inputCellPhone.equals("")) {
+				for(int i=0;i<list.size();i++) {
+					if(list.get(i).getMemId().equals(vsId)) {
+						inputData = list.get(i).getMemId()+","+list.get(i).getPw()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+list.get(i).getAddress()+","+list.get(i).getAddrDtail()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+					}
+				}
+			//휴대폰번호, 상세주소 수정
+				if(!inputAddress.equals("")) {
+					for(int i=0;i<list.size();i++) {
+						if(list.get(i).getMemId().equals(vsId)) {
+							inputData = list.get(i).getMemId()+","+list.get(i).getPw()+","+list.get(i).getName()+","+list.get(i).getGrpDiv()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+list.get(i).getAddrDtail()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+						}
+					}
+			//휴대폰번호, 주소, 상세주소 수정
+					if(!inputArea.equals("")) {
+						for(int i=0;i<list.size();i++) {
+							if(list.get(i).getMemId().equals(vsId)) {
+								inputData = list.get(i).getMemId()+","+list.get(i).getPw()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+inputArea.trim()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+							}
+						}
+					}
+				}
+			}
+		//비밀번호, 휴대폰번호 수정 안함
+		} else if((inputPw.equals("")||inputPw.equals(null)) && (inputCellPhone.equals("")||inputCellPhone.equals(null))) {
+			// 상세주소만 수정
+			if(!inputArea.equals("")) {
+				for(int i=0;i<list.size();i++) {
+					if(list.get(i).getMemId().equals(vsId)) {
+						inputData = list.get(i).getMemId()+","+list.get(i).getPw()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+list.get(i).getCellphone()+","+list.get(i).getAddress()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+					}
+				}
+			//주소, 상세주소 수정
+				if(!inputAddress.equals("")) {
+					for(int i=0;i<list.size();i++) {
+						if(list.get(i).getMemId().equals(vsId)) {
+							inputData = list.get(i).getMemId()+","+list.get(i).getPw()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+list.get(i).getCellphone()+","+inputArea.trim()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+						}
+					}
+				}
+			}
+		// 비밀번호, 주소 수정 안함
+		} else if((inputPw.equals("")||inputPw.equals(null)) && (inputArea.equals("")||inputArea.equals(null))) {
+			//휴대폰번호만 수정
+			if(!inputCellPhone.equals("")) {
+				for(int i=0;i<list.size();i++) {
+					if(list.get(i).getMemId().equals(vsId)) {
+						inputData = list.get(i).getMemId()+","+list.get(i).getPw()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+list.get(i).getAddress()+","+list.get(i).getAddrDtail()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+					}
+				}
+			//휴대폰번호, 상세주소 수정
+				if(!inputAddress.equals("")) {
+					for(int i=0;i<list.size();i++) {
+						if(list.get(i).getMemId().equals(vsId)) {
+							inputData = list.get(i).getMemId()+","+list.get(i).getPw()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+list.get(i).getAddress()+","+inputAddress.trim()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+						}
+					}
+				}
+			}
+		//비밀번호, 주소, 상세주소 수정 안함
+		} else {
+			//휴대폰번호만 수정
+			if(!inputCellPhone.equals("")) {
+				for(int i=0;i<list.size();i++) {
+					if(list.get(i).getMemId().equals(vsId)) {
+						inputData = list.get(i).getMemId()+","+list.get(i).getPw()+","+list.get(i).getName()+","+list.get(i).getAuth()+","+list.get(i).getGrpDiv()+","+inputCellPhone.trim()+","+list.get(i).getAddress()+","+list.get(i).getAddrDtail()+","+list.get(i).getRegDt()+","+list.get(i).getRegId();
+					}
+				}
+			}
+		}
+		inputData = inputData.trim(); //앞뒤 공백 제거
+		String[] dataArray = inputData.split(",");
+		MemberVO outVo = new MemberVO();
+		outVo.setMemId(dataArray[0]);
+		outVo.setPw(dataArray[1]);
+		outVo.setName(dataArray[2]);
+		outVo.setAuth(dataArray[3]);
+		outVo.setGrpDiv(dataArray[4]);
+		outVo.setCellphone(dataArray[5]);
+		outVo.setAddress(dataArray[6]);
+		outVo.setAddrDtail(dataArray[7]);
+		outVo.setRegDt(dataArray[8]);
+		outVo.setRegId(dataArray[9]);
+		return outVo;
+	}
+}

@@ -1,0 +1,39 @@
+Label {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+Text {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+Button {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+.font35 {
+	-fx-font-size: 35px;
+}
+.font30 {
+	-fx-font-size: 30px;
+}
+.font25 {
+	-fx-font-size: 25px;
+}
+.font18 {
+	-fx-font-size: 18px;
+}
+.font15 {
+	-fx-font-size: 15px;
+}
+.font12 {
+	-fx-font-size: 12px;
+}
+TextField {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+PasswordField {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+ComboBox {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+ListView {
+	-fx-font-family: "NanumSquareRound Regular";
+}

@@ -1,0 +1,71 @@
+package kr.sist.joba.main.controller;
+
+import java.net.URL;
+import java.util.ResourceBundle;
+
+import data.PathData;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Label;
+import javafx.scene.input.MouseEvent;
+
+public class StartController implements Initializable {
+	@FXML
+	Label lbNonMember, lbOrderHistoryLogin, lbSignUp, lbLogIn;
+	
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
+		//상단 라벨 클릭시 NonMember 로
+		lbNonMember.setOnMousePressed(event -> nonMemberAction(event));
+		//상단 라벨 클릭시 OrderHistoryLogin 으로
+		lbOrderHistoryLogin.setOnMousePressed(event -> orderHistoryLogInAction(event));
+		//상단 라벨 클릭시 SignUp 으로
+		lbSignUp.setOnMousePressed(event -> signUpAction(event));
+		//상단 라벨 클릭시 Login 으로
+		lbLogIn.setOnMousePressed(event -> logInAction(event));
+	} //--initialize
+
+	/**NonMember 가기 액션 이벤트*/
+	private void nonMemberAction(MouseEvent event) {
+		//패스데이터
+		PathData.pStartNonMember = true; // 빼고 초기화
+		PathData.pOrderHistoryLogInNonMember = false;   
+		PathData.pSignUpNonMember = false;              
+		PathData.pLogInNonMember = false;
+		//NonMember 이동
+		PathData.nonMemMethod(lbNonMember, StartController.class);
+	} //--nonMemberAction
+	
+	/**OrderHistoryLogIn 가기 액션 이벤트*/
+	private void orderHistoryLogInAction(MouseEvent event) {
+		//패스데이터
+		PathData.pStartOrderHistoryLogin = true; //빼고 초기화
+		PathData.pNonMemberOrderHistoryLogin = false;   
+		PathData.pSignUpOrderHistoryLogin = false;      
+		PathData.pLogInOrderHistoryLogin = false;
+		//OrderHistoryLogin 이동
+		PathData.orderHisLogInMethod(lbOrderHistoryLogin, StartController.class);
+	} //--orderHistoryLogInAction
+	
+	/**SignUp 가기 액션 이벤트*/
+	private void signUpAction(MouseEvent event) {
+		//패스데이터
+		PathData.pStartSignUp = true; //빼고 초기화
+		PathData.pNonMemberSignUp = false;        
+		PathData.pOrderHistoryLogInSignUp = false;
+		PathData.pLogInSingUp = false;
+		//SignUp 이동
+		PathData.signUpMethod(lbSignUp, StartController.class);
+	} //--signUpAction
+	
+	/**LogIn 가기 액션 이벤트*/
+	private void logInAction(MouseEvent event) {
+		//패스데이터
+		PathData.pStartLogIn = true; //빼고 초기화
+		PathData.pNonMemberLogIn = false;        
+		PathData.pOrderHistoryLogInLogIn = false;
+		PathData.pSignUpLogIn = false;
+		//Login 이동
+		PathData.logInMethod(lbLogIn, StartController.class);
+	} //--logInAction
+}

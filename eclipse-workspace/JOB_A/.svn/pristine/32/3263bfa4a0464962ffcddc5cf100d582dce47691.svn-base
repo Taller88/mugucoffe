@@ -1,0 +1,54 @@
+package kr.sist.joba.order.dao;
+
+
+public class ProductDAO02 {
+	String productName[]= {"아메리카노","딸기라떼","케이크","딸기케이크"};
+	int productCount[]= {7,2,3,4};
+	int productPrice[]= {3000,3500,4000,5000};
+	String imgName[]= {"amH.png","strawberryLatte.png","cake.jpg","strawberryCake.jpg"};
+	
+	int orderCount =1000;
+	
+	
+	public String getImgName(int index) {
+		return imgName[index];
+	}
+	/**
+	 */
+	public String[] getProductName() {
+		return productName;
+	}
+	/**
+	 */
+	public void setProductName(String[] productName) {
+		this.productName = productName;
+	}
+	/**
+	 */
+	public int[] getProductPrice() {
+		return productPrice;
+	}
+	/**
+	 */
+	public void setProductPrice() {
+		this.productPrice = productPrice;
+	}
+	/**
+	 */
+	public int[] getProductCount() {
+		return productCount;
+	}
+	/**
+	 */
+	public void setProductCount(int i) {
+		this.productCount[i]++;
+	}
+	
+	public int getOrderCount() {
+		return orderCount;
+	}
+	
+	public void setOrderCount(int orderCount) {
+		this.orderCount = orderCount;
+	}
+}

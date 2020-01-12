@@ -1,0 +1,4 @@
+.topButton {
+    -fx-text-fill : white;
+    -fx-font-family: 'Binggrae';
+}

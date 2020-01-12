@@ -1,0 +1,24 @@
+Label {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+Text {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+Button {
+	-fx-font-family: "NanumSquareRound Regular";
+}
+.font35 {
+	-fx-font-size: 35px;
+}
+.font30 {
+	-fx-font-size: 30px;
+}
+.font25 {
+	-fx-font-size: 25px;
+}
+.font20 {
+	-fx-font-size: 20px;
+}
+.font18 {
+	-fx-font-size: 18px;
+}
