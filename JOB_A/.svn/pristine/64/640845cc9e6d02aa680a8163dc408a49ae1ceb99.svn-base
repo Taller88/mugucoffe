@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.image.*?>
+<?import javafx.scene.text.*?>
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Line?>
+
+<AnchorPane prefHeight="800.0" prefWidth="1280.0" style="-fx-background-color: white;" stylesheets="@FontStyle.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="kr.sist.joba.orderhistory.controller.OrderHistoryLoginController">
+   <children>
+      <Line endY="374.0" layoutX="640.0" layoutY="272.0" startY="-76.0" stroke="#929292" />
+      <VBox prefHeight="150.0" prefWidth="1280.0">
+         <children>
+            <HBox prefHeight="20.0" prefWidth="200.0" style="-fx-background-color: #fdd913;" />
+            <HBox prefHeight="50.0" prefWidth="1280.0" style="-fx-background-color: #929292;">
+               <children>
+                  <ImageView fx:id="imStart" fitHeight="90.0" fitWidth="275.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../../img/HomeIcon.png" />
+                     </image>
+                  </ImageView>
+                  <VBox prefHeight="200.0" prefWidth="1200.0">
+                     <children>
+                        <HBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="1200.0" spacing="20.0">
+                           <children>
+                              <Label fx:id="lbBack" styleClass="font25" text="◀" textFill="WHITE">
+                                 <font>
+                                    <Font size="24.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="lbNonMember" styleClass="font25" text="비회원주문" textFill="WHITE">
+                                 <font>
+                                    <Font size="24.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="lbSignUp" styleClass="font25" text="회원가입" textFill="WHITE">
+                                 <font>
+                                    <Font size="24.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+               </children>
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+            </HBox>
+            <HBox prefHeight="20.0" prefWidth="200.0" style="-fx-background-color: #fdd913;" />
+         </children>
+      </VBox>
+      <VBox alignment="TOP_CENTER" layoutY="700.0" prefHeight="100.0" prefWidth="1280.0" style="-fx-background-color: #929292;">
+         <children>
+            <HBox prefHeight="20.0" prefWidth="200.0" style="-fx-background-color: #fdd913;" />
+            <ImageView fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../../../../../img/Logo2.png" />
+               </image>
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin>
+            </ImageView>
+         </children>
+      </VBox>
+      <VBox alignment="TOP_RIGHT" layoutX="129.0" layoutY="150.0" prefHeight="550.0" prefWidth="400.0">
+         <children>
+            <HBox prefHeight="25.0" prefWidth="150.0" style="-fx-background-color: #929292;">
+               <VBox.margin>
+                  <Insets />
+               </VBox.margin>
+               <children>
+                  <Label styleClass="font35" text="회원" textFill="WHITE">
+                     <font>
+                        <Font size="30.0" />
+                     </font>
+                  </Label>
+               </children>
+               <padding>
+                  <Insets left="20.0" />
+               </padding>
+            </HBox>
+            <Label fx:id="lbMessage" prefHeight="30.0" prefWidth="400.0" textFill="RED">
+               <VBox.margin>
+                  <Insets top="130.0" />
+               </VBox.margin>
+            </Label>
+            <TextField fx:id="logID" prefHeight="40.0" prefWidth="200.0" promptText="아이디를 입력하세요">
+               <VBox.margin>
+                  <Insets bottom="20.0" />
+               </VBox.margin>
+            </TextField>
+            <PasswordField fx:id="logPW" prefHeight="40.0" prefWidth="200.0" promptText="비밀번호를 입력하세요">
+               <VBox.margin>
+                  <Insets bottom="20.0" />
+               </VBox.margin>
+            </PasswordField>
+            <HBox alignment="TOP_RIGHT">
+               <children>
+                  <Button fx:id="btnToOrderHistory1" mnemonicParsing="false" prefHeight="55.0" style="-fx-background-color: #fdd913;" styleClass="font15" text="로그인">
+                     <HBox.margin>
+                        <Insets left="30.0" />
+                     </HBox.margin>
+                  </Button>
+               </children>
+               <VBox.margin>
+                  <Insets bottom="20.0" />
+               </VBox.margin>
+            </HBox>
+            <HBox alignment="CENTER_RIGHT" spacing="10.0">
+               <children>
+                  <Label text="아이디랑 비밀번호를 잊으셨나요?">
+                     <font>
+                        <Font size="15.0" />
+                     </font>
+                  </Label>
+                  <Button fx:id="btnUserIdFind" mnemonicParsing="false" style="-fx-background-color: #fdd913;" styleClass="font15" text="아이디/비밀번호찾기" />
+               </children>
+            </HBox>
+         </children>
+         <padding>
+            <Insets top="10.0" />
+         </padding>
+      </VBox>
+      <VBox alignment="TOP_RIGHT" layoutX="761.0" layoutY="150.0" prefHeight="550.0" prefWidth="400.0">
+         <children>
+            <HBox prefHeight="25.0" prefWidth="150.0" style="-fx-background-color: #929292;">
+               <children>
+                  <Label styleClass="font35" text="비회원" textFill="WHITE">
+                     <font>
+                        <Font size="30.0" />
+                     </font>
+                  </Label>
+               </children>
+               <VBox.margin>
+                  <Insets />
+               </VBox.margin>
+               <padding>
+                  <Insets left="20.0" />
+               </padding>
+            </HBox>
+            <Label fx:id="lbNonMessage" prefHeight="30.0" prefWidth="400.0" textFill="RED">
+               <VBox.margin>
+                  <Insets top="130.0" />
+               </VBox.margin>
+            </Label>
+            <TextField fx:id="nonMemCellPhone" prefHeight="40.0" prefWidth="200.0" promptText="'-' 없이 휴대폰 번호를 입력하세요">
+               <VBox.margin>
+                  <Insets bottom="20.0" />
+               </VBox.margin>
+            </TextField>
+            <PasswordField fx:id="nonMemberPw" prefHeight="40.0" prefWidth="200.0" promptText="비밀번호 4자를 입력하세요">
+               <VBox.margin>
+                  <Insets bottom="20.0" />
+               </VBox.margin>
+            </PasswordField>
+            <Button fx:id="btnToOrderHistory2" mnemonicParsing="false" prefHeight="55.0" prefWidth="60.0" style="-fx-background-color: #fdd913;" styleClass="font15" text="확인">
+               <VBox.margin>
+                  <Insets />
+               </VBox.margin>
+            </Button>
+         </children>
+         <padding>
+            <Insets top="10.0" />
+         </padding>
+      </VBox>
+   </children>
+</AnchorPane>

@@ -1,0 +1,75 @@
+package kr.sist.joba.user.dao;
+
+import data.DTO;
+
+public class NonMemberVO extends DTO {
+	/**비회원 이름*/
+	private String nonMemberName;
+	/**비회원 PW*/
+	private String nonMemberPw;
+	/**비회원 휴대폰 번호*/
+	private String nonMemberCellPhone;
+	
+	public NonMemberVO() {}
+	
+	/**
+	 * @param nonMemberName
+	 * @param nonMemberPw
+	 * @param nonMemberCellPhone
+	 */
+	public NonMemberVO(String nonMemberName, String nonMemberPw, String nonMemberCellPhone) {
+		super();
+		this.nonMemberName = nonMemberName;
+		this.nonMemberPw = nonMemberPw;
+		this.nonMemberCellPhone = nonMemberCellPhone;
+	}
+
+	/**
+	 * @return the nonMemberName
+	 */
+	public String getNonMemberName() {
+		return nonMemberName;
+	}
+
+	/**
+	 * @param nonMemberName the nonMemberName to set
+	 */
+	public void setNonMemberName(String nonMemberName) {
+		this.nonMemberName = nonMemberName;
+	}
+
+	/**
+	 * @return the nonMemberPw
+	 */
+	public String getNonMemberPw() {
+		return nonMemberPw;
+	}
+
+	/**
+	 * @param nonMemberPw the nonMemberPw to set
+	 */
+	public void setNonMemberPw(String nonMemberPw) {
+		this.nonMemberPw = nonMemberPw;
+	}
+
+	/**
+	 * @return the nonMemberCellPhone
+	 */
+	public String getNonMemberCellPhone() {
+		return nonMemberCellPhone;
+	}
+
+	/**
+	 * @param nonMemberCellPhone the nonMemberCellPhone to set
+	 */
+	public void setNonMemberCellPhone(String nonMemberCellPhone) {
+		this.nonMemberCellPhone = nonMemberCellPhone;
+	}
+
+	@Override
+	public String toString() {
+		return "NonMemberVO [nonMemberName=" + nonMemberName + ", nonMemberPw=" + nonMemberPw + ", nonMemberCellPhone="
+				+ nonMemberCellPhone + "]";
+	}
+	
+}

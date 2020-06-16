@@ -1,0 +1,574 @@
+package kr.sist.joba.user.controller;
+
+import java.io.IOException;
+import java.net.URL;
+import java.text.DecimalFormat;
+import java.util.List;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.sist.hr.cmn.HROraConnectionMaker;
+import com.sist.hr.cmn.SearchVO;
+import com.sist.hr.member.dao.MemberDao;
+import com.sist.hr.member.domain.MemberVO;
+
+import data.PathData;
+import javafx.concurrent.Worker;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.text.Text;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import javafx.stage.Popup;
+import javafx.stage.Stage;
+import kr.sist.joba.main.controller.CompleteController;
+import kr.sist.joba.order.dao.OrderDAO;
+import kr.sist.joba.order.dao.OrderNumDAO;
+import kr.sist.joba.order.dao.OrderNumVO;
+import kr.sist.joba.order.dao.OrderVO;
+import kr.sist.joba.order.dao.ProductDAO;
+import kr.sist.joba.store.dao.StoreDAO;
+import kr.sist.joba.user.dao.UserPointDAO;
+import kr.sist.joba.user.dao.UserPointVO;
+import netscape.javascript.JSObject;
+
+public class PaymentController implements Initializable {
+	@FXML
+	Label lbBackOrderList, lbHisLog, lbSignMy, lbLogInOut;
+	@FXML
+	Button btnBackOrderList, btnUsePoint, btnCardPay, btnPostPay;
+	@FXML
+	TextField tfOrderRequests, tfUsePoint;
+	@FXML
+	Text txOrderName01, txOrderName02, txOrderName03, txOrderName04,
+		 txOrderCount01, txOrderCount02, txOrderCount03, txOrderCount04,
+		 txOrderPrice01, txOrderPrice02, txOrderPrice03, txOrderPrice04,
+		 txTotalPrice, txFinalPrice,
+		 txNowPoint, txWarning, txRemainingPoint, txExpectedPoint,
+		 txUserName, txUserArea, txUserAddress, txUserCellPhone, txStoreName;
+	@FXML
+	ImageView imStartHome;
+	
+	private JSObject javascriptConnector;
+	/** for communication from the Javascript engine. */
+	private JavaConnector javaConnector = new JavaConnector();
+
+	DecimalFormat formatter = new DecimalFormat("###,###");
+	
+	static ProductDAO productDao = new ProductDAO();
+	int sum = 0;
+//	int[] count = productDao.getProductCount();
+//	int[] price = productDao.getProductPrice();
+//	String[] name = productDao.getProductName();
+
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
+		StoreDAO storeDao = new StoreDAO();
+		UserPointDAO userPointDao = new UserPointDAO();
+		// 비회원 메뉴
+		if (PathData.pUserId == null) {
+			lbHisLog.setText("주문내역");
+			lbSignMy.setText("회원가입");
+			lbLogInOut.setText("로그인");
+			imStartHome.setOnMousePressed(event -> startAction(event));
+			lbHisLog.setOnMousePressed(event -> orderHistoryLogInAction(event));
+			lbSignMy.setOnMousePressed(event -> signUpAction(event));
+			lbLogInOut.setOnMousePressed(event -> logInAction(event));
+			txUserName.setText(PathData.pUserName);
+			txUserArea.setText(PathData.pUserArea);
+			txUserAddress.setText(PathData.pUserAddress);
+		// 회원 메뉴
+		} else {
+			lbHisLog.setText("주문내역");
+			lbSignMy.setText("마이페이지");
+			lbLogInOut.setText("로그아웃");
+			imStartHome.setOnMousePressed(event -> homeAction(event));
+			lbHisLog.setOnMousePressed(event -> orderHistoryAction(event));
+			lbSignMy.setOnMousePressed(event -> myPageAction(event));
+			lbLogInOut.setOnMousePressed(event -> logOutAction(event));
+			txUserName.setText(userInfo().getName());
+			txUserArea.setText(userInfo().getAddress());
+			txUserAddress.setText(userInfo().getAddrDtail());
+		}
+		// 비회원 휴대폰번호
+		if (PathData.pUserId == null) {
+			if (PathData.pUserCellPhone.length() == 10) {
+				txUserCellPhone.setText(PathData.pUserCellPhone.substring(0, 3) + "-"
+						+ PathData.pUserCellPhone.substring(3, 6) + "-" + PathData.pUserCellPhone.substring(6, 10));
+			} else {
+				txUserCellPhone.setText(PathData.pUserCellPhone.substring(0, 3) + "-"
+						+ PathData.pUserCellPhone.substring(3, 7) + "-" + PathData.pUserCellPhone.substring(7, 11));
+			}
+		// 회원 휴대폰번호
+		} else {
+			if (userInfo().getCellphone().length() == 10) {
+				txUserCellPhone.setText(userInfo().getCellphone().substring(0, 3) + "-"
+						+ userInfo().getCellphone().substring(3, 6) + "-"
+						+ userInfo().getCellphone().substring(6, 10));
+			} else {
+				txUserCellPhone.setText(userInfo().getCellphone().substring(0, 3) + "-"
+						+ userInfo().getCellphone().substring(3, 7) + "-"
+						+ userInfo().getCellphone().substring(7, 11));
+			}
+		}
+		txStoreName.setText(PathData.pStoreName);
+		
+		Text orderName[] = { txOrderName01, txOrderName02, txOrderName03, txOrderName04 };
+		Text orderCount[] = { txOrderCount01, txOrderCount02, txOrderCount03, txOrderCount04 };
+		Text orderPrice[] = { txOrderPrice01, txOrderPrice02, txOrderPrice03, txOrderPrice04 };
+		// OrderList에서 불러오는 목록
+		for (int i = 0; i < orderName.length; i++) {
+			if (PathData.pProductCount[i] == 0 ) {
+				orderName[i].setText(null);
+				orderCount[i].setText(null);
+				orderPrice[i].setText(null);
+			} else {
+				orderName[i].setText(PathData.pProductName[i]);
+				orderCount[i].setText(PathData.pProductCount[i] + "개");
+				orderPrice[i].setText(formatter.format(PathData.pProductPrice[i]) + "원");
+			}
+		}
+		for (int i = 0; i < PathData.pProductPrice.length; i++) {
+			sum += PathData.pProductPrice[i];
+		}
+		txTotalPrice.setText(formatter.format(sum));
+		// 비회원
+		if(PathData.pUserId == null) {
+			txNowPoint.setText("비회원");
+			txRemainingPoint.setText("비회원");
+		// 회원
+		} else {
+			txNowPoint.setText(formatter.format(Integer.parseInt(userPointDao.readUserPoint(PathData.pUserId))));
+			txRemainingPoint.setText(formatter.format(Integer.parseInt(userPointDao.readUserPoint(PathData.pUserId))));
+		}
+		txFinalPrice.setText(txTotalPrice.getText());
+		if (PathData.pUserId == null) {
+			txExpectedPoint.setText("비회원");
+		} else {
+			txExpectedPoint.setText(formatter.format((sum / 10)));
+		}
+		lbBackOrderList.setOnMousePressed(event -> backOrderListAction(event));
+		btnUsePoint.setOnAction(event -> usePointAction(event));
+		btnCardPay.setOnAction(event -> cardPayAction(event));
+		btnPostPay.setOnAction(event -> postPayAction(event));
+	}// --initialize
+
+	public void backOrderListAction(MouseEvent event) {
+		try {
+			Parent second = FXMLLoader.load(getClass().getResource("/kr/sist/joba/order/view/OrderList.fxml"));
+			Scene scene = new Scene(second);
+			Stage primaryStage = (Stage) lbBackOrderList.getScene().getWindow();
+			primaryStage.setScene(scene);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}// --backOrderListAction
+
+	/** 마일리지 사용 버튼 액션 */
+	public void usePointAction(ActionEvent event) {
+		// 비회원
+		if(PathData.pUserId == null) {
+			Alert alert = new Alert(AlertType.WARNING);
+			alert.setTitle("주의!");
+			alert.setHeaderText("회원이 아닙니다");
+			alert.setContentText("회원가입 후 이용해주세요");
+	        alert.showAndWait();
+	    // 회원
+		} else {
+			if(!(tfUsePoint.getText().isEmpty()) && numRegEx() == false) {
+				txWarning.setText("10 포인트 단위로 사용 가능합니다.");
+			} else {
+				int intSum = 0;
+				UserPointDAO userPointDao = new UserPointDAO();
+				for (int i = 0; i < PathData.pProductPrice.length; i++) {
+					intSum += PathData.pProductPrice[i];
+				}
+				int intTotalPrice = sum;
+				int intNowPoint = Integer.parseInt(userPointDao.readUserPoint(PathData.pUserId));
+				int intUsePoint = Integer.parseInt(tfUsePoint.getText());
+				if ((intNowPoint - intUsePoint) < 0) {
+					if (PathData.pUserId == null) {
+						txWarning.setText("회원이 아닙니다.");
+					} else {
+						txWarning.setText("사용 가능 포인트를 초과했습니다.");
+					}
+				} else {
+					if ((intTotalPrice - intUsePoint) < 0) {
+						txWarning.setText("사용한 포인트가 결제 금액보다 많습니다.");
+					} else if(intUsePoint%10 != 0) {
+						txWarning.setText("10 포인트 단위로 사용 가능합니다.");
+					} else if(intUsePoint<=0) {
+						txWarning.setText("0 포인트 이하는 사용이 불가합니다.");
+					} else {
+						txWarning.setText("");
+						txFinalPrice.setText(formatter.format(intTotalPrice - intUsePoint));
+						txRemainingPoint.setText(formatter.format(intNowPoint - intUsePoint));
+						txExpectedPoint.setText(formatter.format((intTotalPrice - intUsePoint) / 10));
+					}
+				}
+			}
+		}
+	}// --usePointAction
+	
+	/**마일리지 사용 정규표현식으로 유효성 검사*/
+	public boolean numRegEx() {
+		Pattern numPattern = null;
+		Matcher numMatch = null;	
+		boolean check = false;
+		//영문 또는 숫자 4~10자
+		String source = "^[0-9]{2,6}$";
+		String strPw = tfUsePoint.getText();
+		numPattern = Pattern.compile(source);
+		numMatch = numPattern.matcher(strPw);
+		while(true) {
+			if(numMatch.matches()) {
+				check = true;
+				break;
+			} else {
+				check = false;
+				break;
+			}
+		}
+		return check;
+	} //--numRegEx
+
+	/**카드결제 버튼 액션 이벤트*/
+	public void cardPayAction(ActionEvent event) {
+		Text orderName[] = { txOrderName01, txOrderName02, txOrderName03, txOrderName04 };
+		Text orderCount[] = { txOrderCount01, txOrderCount02, txOrderCount03, txOrderCount04 };
+		Text orderPrice[] = { txOrderPrice01, txOrderPrice02, txOrderPrice03, txOrderPrice04 };
+		OrderDAO orderDao = new OrderDAO();
+		OrderNumDAO orderNumDao = new OrderNumDAO();
+		UserPointDAO userPointDao = new UserPointDAO();
+		// 비회원
+		if (PathData.pUserId == null) {
+			for (int i = 0; i < 4; i++) {
+				if (!(PathData.pProductName[i].equals("주문상품"))) {
+					String[] inputData01 = {orderNumDao.saveOrderNum(),txUserCellPhone.getText().replaceAll("-", ""),txUserArea.getText(),txUserAddress.getText(),orderCount[i].getText(),orderPrice[i].getText().replaceAll(",", ""),orderName[i].getText(),"비회원",txStoreName.getText(),"카드","비회원",tfOrderRequests.getText().replaceAll(",", ""),"상품준비"};
+					OrderVO vo01 = new OrderVO(inputData01[0], inputData01[1], inputData01[2], inputData01[3],
+							inputData01[4], inputData01[5], inputData01[6], inputData01[7], inputData01[8],
+							inputData01[9], inputData01[10], inputData01[11], inputData01[12]);
+					orderDao.do_save(vo01);
+				}
+			}
+			if (!(PathData.pProductName.equals("주문상품"))) {
+				String[] inputData02 = { orderNumDao.saveOrderNum() };
+				OrderNumVO vo02 = new OrderNumVO(inputData02[0]);
+				orderNumDao.do_save(vo02);
+			}
+		// 회원
+		} else {
+			int intNowPoint = Integer.parseInt(userPointDao.readUserPoint(PathData.pUserId));
+			int intRemainingPoint = Integer.parseInt(txRemainingPoint.getText().replaceAll(",", ""));
+			int intExpectedPoint = Integer.parseInt(txExpectedPoint.getText().replaceAll(",", ""));
+			String usePoint = Integer.toString((intNowPoint - intRemainingPoint));
+			for (int i = 0; i < 4; i++) {
+				if (!(PathData.pProductName[i].equals("주문상품"))) {
+					UserPointVO modVO = userPointDao
+							.getUpdatePointInputData(Integer.toString(intRemainingPoint + intExpectedPoint));
+					userPointDao.do_update(modVO);
+					String[] inputData01 = {orderNumDao.saveOrderNum(),txUserCellPhone.getText().replaceAll("-", ""),txUserArea.getText(),txUserAddress.getText(),orderCount[i].getText(),orderPrice[i].getText().replaceAll(",", ""),orderName[i].getText(),PathData.pUserId,txStoreName.getText(),"카드",usePoint,tfOrderRequests.getText().replaceAll(",", ""),"상품준비"};
+					OrderVO vo01 = new OrderVO(inputData01[0], inputData01[1], inputData01[2], inputData01[3],
+							inputData01[4], inputData01[5], inputData01[6], inputData01[7], inputData01[8],
+							inputData01[9], inputData01[10], inputData01[11], inputData01[12]);
+					orderDao.do_save(vo01);
+				}
+			}
+			if (!(PathData.pProductName.equals("주문상품"))) {
+				String[] inputData02 = { orderNumDao.saveOrderNum() };
+				OrderNumVO vo02 = new OrderNumVO(inputData02[0]);
+				orderNumDao.do_save(vo02);
+			}
+		}
+		
+		MyBrowser myBrowser;
+		Popup pop=new Popup();
+		
+		WebView browser=new WebView();
+		WebEngine engine=browser.getEngine();
+	
+		myBrowser = new MyBrowser();
+	     // set up the listener
+		engine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
+            if (Worker.State.SUCCEEDED == newValue) {
+//              페이지가로드되면 JavaConnector 객체 (내부 클래스에 의해 정의되고 필드로 생성 됨)가
+//              다음 호출에 의해 웹 페이지에 설정됩니다.
+                JSObject window = (JSObject) engine.executeScript("window");
+                window.setMember("javaConnector", javaConnector);
+
+                //javascriptConnector 객체는 다음과 같은 웹 페이지에서 가져옵니다.
+                javascriptConnector = (JSObject) engine.executeScript("getJsConnector()");
+            }
+        });
+		
+		Stage second = (Stage) btnCardPay.getScene().getWindow();
+		
+		pop.getContent().add(myBrowser);
+		pop.setAutoHide(true);
+		pop.show(second);
+//		second.setScene(scene);
+		
+		if(pop.isAutoHide()) {
+			try {
+				Parent third = FXMLLoader.load(getClass().getResource("/kr/sist/joba/main/view/Complete.fxml"));
+				Scene scene2 = new Scene(third);
+				Stage primaryStage = (Stage) btnCardPay.getScene().getWindow();
+				primaryStage.setScene(scene2);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}// --cardPayAction
+
+	/**후불결제 버튼 액션 이벤트*/
+	public void postPayAction(ActionEvent event) {
+		Text orderName[] = { txOrderName01, txOrderName02, txOrderName03, txOrderName04 };
+		Text orderCount[] = { txOrderCount01, txOrderCount02, txOrderCount03, txOrderCount04 };
+		Text orderPrice[] = { txOrderPrice01, txOrderPrice02, txOrderPrice03, txOrderPrice04 };
+		OrderDAO orderDao = new OrderDAO();
+		OrderNumDAO orderNumDao = new OrderNumDAO();
+		UserPointDAO userPointDao = new UserPointDAO();
+		// 비회원
+		if (PathData.pUserId == null) {
+			for (int i = 0; i < 4; i++) {
+				if (!(PathData.pProductName[i].equals("주문상품"))) {
+					String[] inputData01 = {orderNumDao.saveOrderNum(),txUserCellPhone.getText().replaceAll("-", ""),txUserArea.getText(),txUserAddress.getText(),orderCount[i].getText(),orderPrice[i].getText().replaceAll(",", ""),orderName[i].getText(),"비회원",txStoreName.getText(),"카드","비회원",tfOrderRequests.getText().replaceAll(",", ""),"상품준비"};
+					OrderVO vo01 = new OrderVO(inputData01[0], inputData01[1], inputData01[2], inputData01[3],
+							inputData01[4], inputData01[5], inputData01[6], inputData01[7], inputData01[8],
+							inputData01[9], inputData01[10], inputData01[11], inputData01[12]);
+					orderDao.do_save(vo01);
+				}
+			}
+			if (!(PathData.pProductName.equals("주문상품"))) {
+				String[] inputData02 = { orderNumDao.saveOrderNum() };
+				OrderNumVO vo02 = new OrderNumVO(inputData02[0]);
+				orderNumDao.do_save(vo02);
+			}
+		// 회원
+		} else {
+			int intNowPoint = Integer.parseInt(userPointDao.readUserPoint(PathData.pUserId));
+			int intRemainingPoint = Integer.parseInt(txRemainingPoint.getText().replaceAll(",", ""));
+			int intExpectedPoint = Integer.parseInt(txExpectedPoint.getText().replaceAll(",", ""));
+			String usePoint = Integer.toString((intNowPoint - intRemainingPoint));
+			for (int i = 0; i < 4; i++) {
+				if (!(PathData.pProductName[i].equals("주문상품"))) {
+					UserPointVO modVO = userPointDao
+							.getUpdatePointInputData(Integer.toString(intRemainingPoint + intExpectedPoint));
+					userPointDao.do_update(modVO);
+					String[] inputData01 = {orderNumDao.saveOrderNum(),txUserCellPhone.getText().replaceAll("-", ""),txUserArea.getText(),txUserAddress.getText(),orderCount[i].getText(),orderPrice[i].getText().replaceAll(",", ""),orderName[i].getText(),PathData.pUserId,txStoreName.getText(),"카드",usePoint,tfOrderRequests.getText().replaceAll(",", ""),"상품준비"};
+					OrderVO vo01 = new OrderVO(inputData01[0], inputData01[1], inputData01[2], inputData01[3],
+							inputData01[4], inputData01[5], inputData01[6], inputData01[7], inputData01[8],
+							inputData01[9], inputData01[10], inputData01[11], inputData01[12]);
+					orderDao.do_save(vo01);
+				}
+			}
+			if (!(PathData.pProductName.equals("주문상품"))) {
+				String[] inputData02 = { orderNumDao.saveOrderNum() };
+				OrderNumVO vo02 = new OrderNumVO(inputData02[0]);
+				orderNumDao.do_save(vo02);
+			}
+		}
+		try {
+			Parent second = FXMLLoader.load(getClass().getResource("/kr/sist/joba/main/view/Complete.fxml"));
+			Scene scene = new Scene(second);
+			Stage primaryStage = (Stage) btnCardPay.getScene().getWindow();
+			primaryStage.setScene(scene);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	} // --postPayAction
+	
+	/**Start로 가는 액션 이벤트*/
+	private void startAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("주문 상태가 초기화 됩니다.");
+		alert.setContentText("그래도 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.startMethod(imStartHome, CompleteController.class);
+        }
+	} //--startAction
+	
+	/**OrderHistoryLogIn으로 가는 액션 이벤트*/
+	private void orderHistoryLogInAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("주문 상태가 초기화 됩니다.");
+		alert.setContentText("그래도 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.pStartOrderHistoryLogin = true;    
+    		PathData.pNonMemberOrderHistoryLogin = false;
+    		PathData.pSignUpOrderHistoryLogin = false;   
+    		PathData.pLogInOrderHistoryLogin = false;    
+    		for(int i=0; i<PathData.pProductName.length; i++) {
+    			PathData.pProductName[i]="주문상품";
+    			PathData.pProductCount[i]=0;
+    			PathData.pProductPrice[i]=0; 
+    			PathData.porderChecked[i]=true;
+    			PathData.pOrderImg[i]= "img/imgInit.png";
+			}
+    		PathData.orderHisLogInMethod(lbHisLog, CompleteController.class);
+        }
+	} //--orderHistoryLogInAction
+	
+	/**SignUp으로 가는 액션 이벤트*/
+	private void signUpAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("주문 상태가 초기화 됩니다.");
+		alert.setContentText("그래도 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.pStartSignUp = true;            
+    		PathData.pNonMemberSignUp = false;        
+    		PathData.pOrderHistoryLogInSignUp = false;
+    		PathData.pLogInSingUp = false;        
+    		for(int i=0; i<PathData.pProductName.length; i++) {
+    			PathData.pProductName[i]="주문상품";
+    			PathData.pProductCount[i]=0;
+    			PathData.pProductPrice[i]=0; 
+    			PathData.porderChecked[i]=true;
+    			PathData.pOrderImg[i]= "img/imgInit.png";
+			}
+    		PathData.signUpMethod(lbSignMy, CompleteController.class);
+        }
+	} //--signMyAction
+	
+	/**LogIn으로 가는 액션 이벤트*/
+	private void logInAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("주문 상태가 초기화 됩니다.");
+		alert.setContentText("그래도 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.pStartLogIn = true;            
+    		PathData.pNonMemberLogIn = false;        
+    		PathData.pOrderHistoryLogInLogIn = false;
+    		PathData.pSignUpLogIn = false;      
+    		for(int i=0; i<PathData.pProductName.length; i++) {
+    			PathData.pProductName[i]="주문상품";
+    			PathData.pProductCount[i]=0;
+    			PathData.pProductPrice[i]=0; 
+    			PathData.porderChecked[i]=true;
+    			PathData.pOrderImg[i]= "img/imgInit.png";
+			}
+    		PathData.logInMethod(lbLogInOut, CompleteController.class);
+        }
+	} //--logInAction
+	
+	/**Home으로 가는 액션 이벤트*/
+	private void homeAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("주문 상태가 초기화 됩니다.");
+		alert.setContentText("그래도 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.homeMethod(imStartHome, CompleteController.class);
+        }
+	} //--homeAction
+	
+	/**OrderHistory으로 가는 액션 이벤트*/
+	private void orderHistoryAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("주문 상태가 초기화 됩니다.");
+		alert.setContentText("그래도 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.pHomeOrderHistory = false;             
+    		PathData.pStoreOrderHistory = true;            
+    		PathData.pOrderHistoryLoginOrderHistory = false;
+    		PathData.pMyPageOrderHistory = false;    
+    		for(int i=0; i<PathData.pProductName.length; i++) {
+    			PathData.pProductName[i]="주문상품";
+    			PathData.pProductCount[i]=0;
+    			PathData.pProductPrice[i]=0; 
+    			PathData.porderChecked[i]=true;
+    			PathData.pOrderImg[i]= "img/imgInit.png";
+			}
+    		PathData.orderHistoryMethod(lbHisLog, CompleteController.class);
+        }
+	} //--orderHistoryAction
+	
+	/**MyPage으로 가는 액션 이벤트*/
+	private void myPageAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("주문 상태가 초기화 됩니다.");
+		alert.setContentText("그래도 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.pHomeMyPage = false;        
+    		PathData.pStoreMyPage = true;       
+    		PathData.pOrderHistoryMyPage = false;
+    		for(int i=0; i<PathData.pProductName.length; i++) {
+    			PathData.pProductName[i]="주문상품";
+    			PathData.pProductCount[i]=0;
+    			PathData.pProductPrice[i]=0; 
+    			PathData.porderChecked[i]=true;
+    			PathData.pOrderImg[i]= "img/imgInit.png";
+			}
+    		PathData.myPageMethod(lbSignMy, CompleteController.class);
+        }
+	} //--myPageAction
+	
+	/**로그아웃 액션 이벤트*/
+	private void logOutAction(MouseEvent event) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("주의!");
+		alert.setHeaderText("홈페이지로 돌아갑니다.");
+		alert.setContentText("정말로 로그아웃 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.get() == ButtonType.OK) {
+        	PathData.logOutMethod(lbLogInOut, CompleteController.class);
+        }
+	} //--logOutAction
+	
+	/**DB에서 현재 접속한 아이디에 해당하는 MemberVO를 return하는 메소드*/
+	private MemberVO userInfo() {
+		MemberVO outvo=new MemberVO();
+		MemberDao tDao=new MemberDao(new HROraConnectionMaker());//강사님 DBDAO
+		SearchVO searchVO=new SearchVO();
+		
+		searchVO.setGrpDiv("1");//조구분
+    	
+    	List<MemberVO> dbData  = (List<MemberVO>) tDao.do_retrieve(searchVO);
+    	for(int i=0; i<dbData.size(); i++) {
+    		if(PathData.pUserId.equals(dbData.get(i).getMemId())) {
+    			outvo= dbData.get(i);
+    		}
+    	}
+		return outvo;
+	} //--userInfo
+	
+	public class JavaConnector {
+	     /**
+	      * called when the JS side wants a String to be converted.
+	      *
+	      * @param value
+	      *         the String to convert
+	      */
+	     public String toLowerCase() {
+	    	 javascriptConnector.call("showResult", txFinalPrice.getText());
+	         return txFinalPrice.getText();
+	     }
+	} //--JavaConnector
+}

@@ -1,0 +1,4 @@
+2020-03-26 17:15:14,331 DEBUG [JavaFX Application Thread] cmn.HROraConnectionMaker (HROraConnectionMaker.java:81)     - SQLException=======================
+2020-03-26 17:15:14,341 DEBUG [JavaFX Application Thread] cmn.HROraConnectionMaker (HROraConnectionMaker.java:83)     - The Network Adapter could not establish the connection
+2020-03-26 17:15:14,341 DEBUG [JavaFX Application Thread] cmn.HROraConnectionMaker (HROraConnectionMaker.java:84)     - SQLException=======================
+2020-03-26 17:15:14,341 DEBUG [JavaFX Application Thread] cmn.HROraConnectionMaker (HROraConnectionMaker.java:86)     - Connection=null

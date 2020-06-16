@@ -1,0 +1,6 @@
+2020-06-16 13:39:44,510 DEBUG [JavaFX Application Thread] cmn.HROraConnectionMaker (HROraConnectionMaker.java:81)     - SQLException=======================
+2020-06-16 13:39:44,522 DEBUG [JavaFX Application Thread] cmn.HROraConnectionMaker (HROraConnectionMaker.java:83)     - Listener refused the connection with the following error:
+ORA-12505, TNS:listener does not currently know of SID given in connect descriptor
+ 
+2020-06-16 13:39:44,522 DEBUG [JavaFX Application Thread] cmn.HROraConnectionMaker (HROraConnectionMaker.java:84)     - SQLException=======================
+2020-06-16 13:39:44,523 DEBUG [JavaFX Application Thread] cmn.HROraConnectionMaker (HROraConnectionMaker.java:86)     - Connection=null

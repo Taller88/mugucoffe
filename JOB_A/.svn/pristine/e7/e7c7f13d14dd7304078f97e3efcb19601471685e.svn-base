@@ -1,0 +1,196 @@
+package kr.sist.joba.user.dao;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+import data.DTO;
+import data.PathData;
+import data.WorkDiv;
+
+public class UserPointDAO implements WorkDiv {
+	
+	private List<UserPointVO> UserInfo = new ArrayList<UserPointVO>();
+	private final String ADD_FILE = "src/data/UserPoint.csv";
+
+	public UserPointDAO() {
+		UserInfo = readFile(ADD_FILE);
+	}
+	
+	public List<UserPointVO> readFile(String filePath){
+		List<UserPointVO> UserData = new ArrayList<UserPointVO>();
+		BufferedReader br = null;
+		try {
+			FileReader fr = new FileReader(filePath);
+			br = new BufferedReader(fr);
+			String line = "";
+			while((line=br.readLine()) != null) {
+				//번호, ID, PW, 이름, 주소, 상세주소, 핸드폰 번호, 마일리지
+				String[] dataArray = line.split(",");
+				UserPointVO vo = new UserPointVO(dataArray[0],dataArray[1]);
+				UserData.add(vo);
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if(null !=br) {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return UserData;
+	}
+	
+	public int saveFile(String path)  {
+		File file = new File(path);
+		FileWriter writer = null;
+		BufferedWriter bw = null;
+		int cnt = 0;
+		try {
+			writer = new FileWriter(file);
+			bw = new BufferedWriter(writer);
+	        
+			for(int i=0;i<UserInfo.size();i++) {
+				UserPointVO vo =UserInfo.get(i);
+				//쉼표, 개행 추가
+				StringBuilder sb=new StringBuilder();
+				//abc,0
+				sb.append(vo.getUserId()+","+vo.getUserPoint());
+				//마지막 라인에 "\n" 제거
+				if((i+1)!=UserInfo.size()) {
+					sb.append("\n");
+				} //if
+				cnt++;
+				bw.write(sb.toString());
+			} //for
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if(null !=bw) {
+					bw.close();
+				}					
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return cnt;
+	}
+	
+	public String readUserPoint(String vsId) {
+		String strNowPoint = null;
+		for(int i=0;i<UserInfo.size();i++) {
+			UserPointVO vo = UserInfo.get(i);
+			if(vo.getUserId().equals(vsId)) {
+				strNowPoint = vo.getUserPoint();
+			}
+		}
+		return strNowPoint;
+	}
+	
+	/**결제시 유저마일리지 업데이트 메서드*/
+	public UserPointVO getUpdatePointInputData(String ab) {
+		UserPointVO outVo = null;
+		String inputData = PathData.pUserId+","+ab;
+		inputData = inputData.trim();//앞뒤 공간 삭제
+		String[] dataArray = inputData.split(",");
+		outVo  = new UserPointVO(dataArray[0],
+								 dataArray[1]
+		);
+		return outVo;
+	}
+	
+	/**취소시 유저마일리지 업데이트 메서드*/
+	public UserPointVO getUpdatePointInputData02(String vsId, String usePoint) {
+		UserPointVO outVo = null;
+		String inputData = "";
+		for(int i=0;i<UserInfo.size();i++) {
+			UserPointVO vo = UserInfo.get(i);
+			if(vo.getUserId().equals(vsId)) {
+				int userNowPoint = Integer.parseInt(vo.getUserPoint());
+				int intUsePoint = Integer.parseInt(usePoint);
+				inputData = vsId+","+(userNowPoint+intUsePoint);
+			}
+		}
+		inputData = inputData.trim();//앞뒤 공간 삭제
+		String[] dataArray = inputData.split(",");
+		outVo  = new UserPointVO(dataArray[0],
+								 dataArray[1]
+		);
+		return outVo;
+	}
+	
+	public boolean isMemberExists(UserPointVO vo){
+		boolean flag = false;
+		for(int i=0;i<UserInfo.size();i++) {
+			UserPointVO vsVO = UserInfo.get(i);
+			//이메일을 비교, 데이터가 있으면 loop종료
+			if(vsVO.getUserId().equals(vo.getUserId())) {
+				flag = true;
+				break;
+			}
+		}
+		return flag;
+	}
+	
+	@Override
+	public int do_save(DTO dto) {
+		UserPointVO vo = (UserPointVO) dto;
+		UserInfo.add(vo);
+		int saveCnt = saveFile(ADD_FILE);
+		return saveCnt;
+	}
+
+	@Override
+	public List<?> do_retrieve(DTO dto) {
+		return null;
+	}
+
+	@Override
+	public DTO do_selectOne(DTO dto) {
+		return null;
+	}
+
+	@Override
+	public int do_update(DTO dto) {
+		int flag = 0;
+		UserPointVO modVO = (UserPointVO) dto;
+		if(isMemberExists(modVO)) {
+			flag = do_delete(modVO);
+			if(flag>0) {
+				do_save(modVO);
+			}
+		}
+		return flag;
+	}
+
+	@Override
+	public int do_delete(DTO dto) {
+		int flag = 0;
+		UserPointVO delVO = (UserPointVO) dto;
+		//반드시 역순으로 찾고 삭제 해야함.
+		for(int i=UserInfo.size()-1;i>=0;i--) {
+			UserPointVO vsVO = UserInfo.get(i);
+			if(delVO.getUserId().equals(vsVO.getUserId())) {
+				UserInfo.remove(i);
+				flag++;
+			}
+		}
+		//파일에 저장
+		if(flag != 0)saveFile(ADD_FILE);
+		return flag;
+	}
+	
+}
